@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import url from '../../backend-server-url';
-import { Button, Table, Tag } from 'antd';
+import { Button, Table, Tag, Card, Skeleton } from 'antd';
 import {Link} from "react-router-dom";
 const columns = [
     {
@@ -49,9 +49,11 @@ const columns = [
 
 const Main = () => {
     const [data, setData] = useState([]);
+    const [loading,setLoading] = useState(true);
     useEffect(()=>{
         axios.get(url.BaseUrl+url.wedding_name).then((response)=>{
             setData(response.data)
+            setLoading(false);
         })
     },[]);
 
@@ -100,6 +102,22 @@ const Main = () => {
       },
     ],
   };
-  return <Table rowSelection={rowSelection} columns={columns} dataSource={data} />;
+  return (
+    <>
+    {
+      loading
+      ?
+          <Card >
+            <Skeleton active />
+            <Skeleton active />
+            <Skeleton active />
+           </Card>
+           :
+           <Table rowSelection={rowSelection} columns={columns} dataSource={data} />
+        }
+    </>
+      
+  
+  )
 };
 export default Main;

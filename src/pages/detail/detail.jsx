@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import url from '../../backend-server-url';
-import { Table, Tag, Card, Input, Button, Space, Tooltip } from 'antd';
-import { PlusOutlined, UndoOutlined,FileAddOutlined, SearchOutlined } from '@ant-design/icons';
+import { Table, Tag, Card, Input, Button, Space, Tooltip,Skeleton } from 'antd';
+import { PlusOutlined, UndoOutlined,FileAddOutlined, SearchOutlined, } from '@ant-design/icons';
 import { useParams } from "react-router-dom";
 import * as XLSX from 'xlsx';
+import { Pie, G2 } from '@ant-design/plots';
 
 
 const { Search } = Input;
@@ -127,15 +128,21 @@ const columns = [
   
 
 const Detail = () =>{ 
-
+  
 
     let {id} = useParams();
     const [update,setUpdate] = useState(true);
+    const [graph,setGraph] = useState([])
     const [data,setData] = useState([]);
+    const [loading,setLoading] = useState(true);
     useEffect(()=>{
         axios.get(`${url.BaseUrl}${url.wedding_name}/${id}`).
         then((response)=>{
             setData(response.data);
+            setLoading(false);
+        })
+        axios.get(`${url.BaseUrl}${url.graph}/${id}`).then((response)=>{
+          setGraph(response.data);
         })
     },[update]);
 
@@ -145,8 +152,10 @@ const Detail = () =>{
     
     
       const onSearch = (value) => {
+
     axios.get(`${url.BaseUrl}${url.wedding_name}/search?search=${value}&WeddingName__id=${id}`).then((response)=>{
         setData(response.data);
+        setLoading(false);
     }
     )
 
@@ -203,34 +212,132 @@ const Detail = () =>{
       };
     
 
+      const G = G2.getEngine('canvas');
+      const datas = [
+        {
+          type: 'Келеді',
+          value: graph.coming,
+        },
+        {
+          type: 'Жұбайымен келеді',
+          value: graph.spouse,
+        },
+        {
+          type: 'Келмейді',
+          value: graph.I_cant_come,
+        },
+    
+      ];
+      const cfg = {
+        appendPadding: 10,
+        datas,
+        angleField: 'value',
+        colorField: 'type',
+        radius: 0.75,
+        legend: false,
+        label: {
+          type: 'spider',
+          labelHeight: 40,
+          formatter: (datas, mappingData) => {
+            const group = new G.Group({});
+            group.addShape({
+              type: 'circle',
+              attrs: {
+                x: 0,
+                y: 0,
+                width: 40,
+                height: 50,
+                r: 5,
+                fill: mappingData.color,
+              },
+            });
+            group.addShape({
+              type: 'text',
+              attrs: {
+                x: 10,
+                y: 8,
+                text: `${datas.type}`,
+                fill: mappingData.color,
+              },
+            });
+            group.addShape({
+              type: 'text',
+              attrs: {
+                x: 0,
+                y: 25,
+                text: `${datas.value}个 ${datas.percent * 100}%`,
+                fill: 'rgba(0, 0, 0, 0.65)',
+                fontWeight: 700,
+              },
+            });
+            return group;
+          },
+        },
+        interactions: [
+          {
+            type: 'element-selected',
+          },
+          {
+            type: 'element-active',
+          },
+        ],
+      };
+      const config = cfg;
+
 return(
     <>
      <Card
     title="Поиск по имени"
+    style={{justifyContent:'center',textAlign:'center'}}
 
   >
-      <Space.Compact block>
+   
+   <Space.Compact direction="vertical">
       <Tooltip title="Поиск">
     <Search
       placeholder="Введите имя приглашенного"
       allowClear
+      style={{width:'100%'}}
       enterButton={<><SearchOutlined /> Искать</>}
       size="large"
       onSearch={onSearch}
     />
-    </Tooltip>
+      </Tooltip>
+  
+      <br/>
+      <Space.Compact block style={{justifyContent:'center', textAlign:'center'}}>
       <Tooltip title="Вернуть данные">
       <Button type='primary' onClick={()=>{setUpdate(!update)}}><UndoOutlined />Вернуть данные</Button>
       </Tooltip>
- 
+
       <Tooltip title="Преоброзовать в exel">
       <Button type='primary' onClick={handleExportExcel}> <FileAddOutlined />Exel</Button>
       </Tooltip>
- 
-      </Space.Compact>
+      </Space.Compact >
+    </Space.Compact >
+  
+     
   </Card>
 
-<Table columns={columns} dataSource={data} onChange={onChange} />
+  {
+loading
+?
+    <Card >
+      <Skeleton active />
+      <Skeleton active />
+      <Skeleton active />
+     </Card>
+     :
+     <>
+
+     <Table columns={columns} dataSource={data} onChange={onChange} />
+     <Card title={"Диаграмма"}>
+     <Pie data={datas} {...config} />
+     </Card>
+     </>
+  }
+
+
 </>
 )
 }
