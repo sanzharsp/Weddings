@@ -215,15 +215,15 @@ const Detail = () =>{
       const G = G2.getEngine('canvas');
       const datas = [
         {
-          type: 'Келеді',
+          type: 'Придут',
           value: graph.coming,
         },
         {
-          type: 'Жұбайымен келеді',
+          type: 'Придут с супругами',
           value: graph.spouse,
         },
         {
-          type: 'Келмейді',
+          type: 'Не придут',
           value: graph.I_cant_come,
         },
     
